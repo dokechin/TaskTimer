@@ -6,7 +6,8 @@
     <string name="about_label">About</string>
     <string name="about_title">About Rodo</string>
     <string name="ok_label">OK</string>
+    <string name="labour">Labour</string>
     <string name="about_text">
-        Time card application for black company lawsuit.
+        Rodo - Logging your labour history to calendar application.
     </string>
 </resources>

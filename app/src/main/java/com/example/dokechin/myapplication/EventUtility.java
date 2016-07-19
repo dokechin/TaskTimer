@@ -24,4 +24,13 @@ public class EventUtility {
         int max_val = cursor.getInt(cursor.getColumnIndex("max_id"));
         return max_val;
     }
+
+    public static boolean hasEventId(ContentResolver cr, int id){
+        Cursor cursor = cr.query(CalendarContract.Events.CONTENT_URI,
+                new String [] {"_id"},  "_id=" + id, null, null);
+        if (cursor.getCount() > 0 ){
+            return true;
+        }
+        return false;
+    }
 }
