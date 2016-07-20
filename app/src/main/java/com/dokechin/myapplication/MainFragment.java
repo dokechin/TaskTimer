@@ -1,4 +1,4 @@
-package com.example.dokechin.myapplication;
+package com.dokechin.myapplication;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -128,7 +128,7 @@ public class MainFragment extends Fragment {
 
                 int lastEventId = EventUtility.getLastEventId(mContext.getContentResolver());
 
-                Log.d("rodo","lastEventId" + lastEventId);
+                Log.d("rodo","lastEventId" + lastEventId + "newEventId" + mNewEventId);
                 if (mNewEventId == lastEventId){
                     mLastEventId = lastEventId;
                     saveFile("event_id.txt", Integer.toString(lastEventId));

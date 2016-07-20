@@ -1,4 +1,4 @@
-package com.example.dokechin.myapplication;
+package com.dokechin.myapplication;
 
 import android.content.ContentResolver;
 import android.database.Cursor;

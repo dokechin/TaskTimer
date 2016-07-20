@@ -1,4 +1,4 @@
-package com.example.dokechin.myapplication;
+package com.dokechin.myapplication;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
