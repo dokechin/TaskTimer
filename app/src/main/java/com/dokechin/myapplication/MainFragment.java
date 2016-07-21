@@ -98,6 +98,7 @@ public class MainFragment extends Fragment {
                     long currentTimeMillis = System.currentTimeMillis();
                     Intent intent = new Intent(Intent.ACTION_EDIT)
                             .setData(uri)
+                            .setType("vnd.android.cursor.item/event")
                             .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, mStartTimeMills)
                             .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, currentTimeMillis);
                     startActivity(intent);
