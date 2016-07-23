@@ -33,17 +33,19 @@ import java.util.TimerTask;
 
 public class MainFragment extends Fragment {
 
+    private static final String TAG = MainFragment.class.getSimpleName();
+
     private AlertDialog mDialog;
     private Context mContext;
     private int mNewEventId;
     private int mLastEventId = -1;
     private long mStartTimeMills = 0;
-    private String mLastEventTitle = "タスク";
+    private String mLastEventTitle = "";
 
     private Timer mainTimer;					//タイマー用
     private MainTimerTask mainTimerTask;		//タイマタスククラス
     private TextView countText;					//テキストビュー
-    private int count = 0;						//カウント
+    private long mCount = 0;		            //カウント
     private Handler mHandler = new Handler();   //UI Threadへのpost用ハンドラ
     private AutoCompleteTextView mTextView;
 
@@ -57,14 +59,14 @@ public class MainFragment extends Fragment {
             mLastEventTitle = loadFile("title.txt");
         }
         catch(Exception ex){
-            Log.d("rodo", ex.toString());
+            Log.d(TAG, ex.toString());
         }
 
         //テキストビュー
         this.countText = (TextView)rootView.findViewById(R.id.timer_text);
 
         String[] TITLES = EventUtility.getTitles(mContext.getContentResolver());
-        Log.d("tasktimer", TITLES.toString());
+        Log.d(TAG, TITLES.toString());
 
         // In the onCreate method
         mTextView = (AutoCompleteTextView) rootView.findViewById(R.id.task_textview);
@@ -122,7 +124,6 @@ public class MainFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 Event event = EventUtility.getEventData(mContext.getContentResolver(),mLastEventId);
-                count = 0;
                 mainTimer.cancel();
                 if (mLastEventId > 0 && event != null) {
 
@@ -162,7 +163,7 @@ public class MainFragment extends Fragment {
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
 
-        Log.d("rodo","onActivityResult requestCode" + requestCode + "resultCode" + resultCode);
+        Log.d(TAG, String.format("onActivityResult requestCode=%s resultCode=%s", requestCode, resultCode));
 
         if (requestCode == 0) {
 
@@ -173,12 +174,13 @@ public class MainFragment extends Fragment {
                 if (mNewEventId == lastEventId){
                     mLastEventId = lastEventId;
                     Event event = EventUtility.getEventData(mContext.getContentResolver(),lastEventId);
+
                     saveFile("event_id.txt", Integer.toString(lastEventId));
                     saveFile("start.txt", Long.toString(event.getStartTimeMills()));
                     saveFile("title.txt", event.getTitle());
 
-                    Log.d("rodo","lastEventId" + lastEventId);
-                    Log.d("rodo","startTimeMills" + event.getStartTimeMills());
+                    // reset count
+                    mCount = 0;
 
                     //タイマーインスタンス生成
                     this.mainTimer = new Timer();
@@ -195,8 +197,10 @@ public class MainFragment extends Fragment {
 
     // ファイルを保存
     public void saveFile(String file, String data) {
+
+        Log.d(TAG , String.format("save data file=%s,data=%s" , file , data));
+
         FileOutputStream fileOutputstream = null;
-        Log.d("rodo" , "save data file= " + file + "data " + data);
 
         try {
             fileOutputstream = this.getContext().openFileOutput(file, Context.MODE_PRIVATE);
@@ -220,13 +224,15 @@ public class MainFragment extends Fragment {
 
     public String loadFile (String file) throws Exception{
         try {
-            Log.d("rodo" , "load data file= " + file );
+
+            Log.d(TAG , String.format("load data file %s" , file));
 
             FileInputStream fileInputstream = this.getContext().openFileInput(file);
             String ret = convertStreamToString(fileInputstream);
             //Make sure you close all streams.
             fileInputstream.close();
-            Log.d("rodo" , "load data data " + ret);
+
+            Log.d(TAG , String.format("load data data %s" , ret));
 
             return ret;
         }
@@ -243,8 +249,8 @@ public class MainFragment extends Fragment {
                 public void run() {
 
                     //実行間隔分を加算処理
-                    count += 1;
-                    Counter counter = new Counter(count);
+                    mCount+= 1;
+                    Counter counter = new Counter(mCount);
                     //画面にカウントを表示
                     countText.setText(counter.clockFormat());
                 }
