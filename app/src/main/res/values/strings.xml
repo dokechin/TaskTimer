@@ -1,13 +1,17 @@
 <resources>
-    <string name="app_name">Rodo</string>
-    <string name="long_app_name">Rodo - Labour Log</string>
+    <string name="app_name">TaskTimer</string>
+    <string name="long_app_name">TaskTimer - Timer for task</string>
     <string name="start_label">Start</string>
     <string name="end_label">End</string>
     <string name="about_label">About</string>
-    <string name="about_title">About Rodo</string>
+    <string name="about_title">About TaskTimer</string>
     <string name="ok_label">OK</string>
-    <string name="labour">Labour</string>
+    <string name="task_label">Task Name</string>
     <string name="about_text">
-        Rodo - Logging your labour history to calendar application.
+        TaskTimer - Timer application for task
+    </string>
+    <string name="finish_title">Finish your task</string>
+    <string name="finish_text">
+        Congraturations. You finished your task.
     </string>
 </resources>

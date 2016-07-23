@@ -8,6 +8,7 @@
     <dimen name="menu_padding">10dp</dimen>
     <dimen name="menu_space">10dp</dimen>
     <dimen name="menu_text_size">32sp</dimen>
+    <dimen name="timer_text_size">64sp</dimen>
     <dimen name="menu_buttom_margin">4dp</dimen>
     <dimen name="menu_buttom_padding">10dp</dimen>
 </resources>

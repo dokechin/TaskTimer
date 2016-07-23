@@ -1,13 +1,17 @@
 <resources>
-    <string name="app_name">Rodo</string>
+    <string name="app_name">TaskTimer</string>
     <string name="about_label">About</string>
-    <string name="about_title">About Rodo</string>
+    <string name="about_title">About TaskTimer</string>
     <string name="ok_label">OK</string>
-    <string name="long_app_name">Rodo - 労務履歴をカレンダーに</string>
-    <string name="start_label">出勤</string>
-    <string name="end_label">退勤</string>
-    <string name="labour">勤務</string>
+    <string name="long_app_name">TaskTimer</string>
+    <string name="start_label">開始</string>
+    <string name="end_label">終了</string>
+    <string name="task_label">タスク名</string>
     <string name="about_text">
-        Rodo - あなたのモバイル端末をタイムカードにする。労務履歴アプリケーション。
+        TaskTimer - タスクタイマーアプリケーション
+    </string>
+    <string name="finish_title">終了</string>
+    <string name="finish_text">
+        タスクが完了しました。
     </string>
 </resources>

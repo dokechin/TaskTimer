@@ -1,21 +1,26 @@
-package com.dokechin.myapplication;
+package com.dokechin.tasktimer;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ContentResolver;
 import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.provider.CalendarContract;
 import android.support.v4.app.Fragment;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
+import android.widget.TextView;
+
+import com.dokechin.tasktimer.com.dokechin.tasktimer.domain.Counter;
+import com.dokechin.tasktimer.com.dokechin.tasktimer.domain.Event;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -23,6 +28,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MainFragment extends Fragment {
 
@@ -31,6 +38,14 @@ public class MainFragment extends Fragment {
     private int mNewEventId;
     private int mLastEventId = -1;
     private long mStartTimeMills = 0;
+    private String mLastEventTitle = "タスク";
+
+    private Timer mainTimer;					//タイマー用
+    private MainTimerTask mainTimerTask;		//タイマタスククラス
+    private TextView countText;					//テキストビュー
+    private int count = 0;						//カウント
+    private Handler mHandler = new Handler();   //UI Threadへのpost用ハンドラ
+    private AutoCompleteTextView mTextView;
 
     @Override
     public View onCreateView(LayoutInflater inflater,ViewGroup container,Bundle savedInstanceState){
@@ -39,10 +54,24 @@ public class MainFragment extends Fragment {
         try {
             mLastEventId = Integer.parseInt(loadFile("event_id.txt"));
             mStartTimeMills = Long.parseLong(loadFile("start.txt"));
+            mLastEventTitle = loadFile("title.txt");
         }
         catch(Exception ex){
             Log.d("rodo", ex.toString());
         }
+
+        //テキストビュー
+        this.countText = (TextView)rootView.findViewById(R.id.timer_text);
+
+        String[] TITLES = EventUtility.getTitles(mContext.getContentResolver());
+        Log.d("tasktimer", TITLES.toString());
+
+        // In the onCreate method
+        mTextView = (AutoCompleteTextView) rootView.findViewById(R.id.task_textview);
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this.getContext(), android.R.layout.simple_list_item_1, TITLES);
+        mTextView.setAdapter(adapter);
+        mTextView.setText(mLastEventTitle);
+
         //
         View aboutButton = rootView.findViewById(R.id.about_button);
         aboutButton.setOnClickListener(new View.OnClickListener(){
@@ -69,7 +98,7 @@ public class MainFragment extends Fragment {
                 //イベントID
                 intent.putExtra(CalendarContract.Events._ID, mNewEventId);
                 //スケジュールのタイトル
-                intent.putExtra(CalendarContract.Events.TITLE, getString(R.string.labour));
+                intent.putExtra(CalendarContract.Events.TITLE, mTextView.getText().toString());
 
                 mStartTimeMills = System.currentTimeMillis();
 
@@ -92,16 +121,28 @@ public class MainFragment extends Fragment {
         leaveBotton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (mLastEventId > 0 && EventUtility.hasEventId(mContext.getContentResolver(),mLastEventId)) {
+                Event event = EventUtility.getEventData(mContext.getContentResolver(),mLastEventId);
+                count = 0;
+                mainTimer.cancel();
+                if (mLastEventId > 0 && event != null) {
 
                     Uri uri = ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, mLastEventId);
                     long currentTimeMillis = System.currentTimeMillis();
-                    Intent intent = new Intent(Intent.ACTION_EDIT)
-                            .setData(uri)
-                            .setType("vnd.android.cursor.item/event")
-                            .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, mStartTimeMills)
-                            .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, currentTimeMillis);
-                    startActivity(intent);
+
+                    ContentResolver cr = mContext.getContentResolver();
+                    ContentValues values = new ContentValues();
+
+                    values.put(CalendarContract.Events.DTSTART, mStartTimeMills);
+                    values.put(CalendarContract.Events.DTEND, currentTimeMillis);
+                    int rows = cr.update(uri, values, null, null);
+
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+                    builder.setTitle(R.string.finish_title);
+                    builder.setMessage(R.string.finish_text);
+                    builder.setCancelable(false);
+                    builder.setPositiveButton(R.string.ok_label,null);
+                    mDialog = builder.show();
+
                 }
             }
         });
@@ -129,11 +170,23 @@ public class MainFragment extends Fragment {
 
                 int lastEventId = EventUtility.getLastEventId(mContext.getContentResolver());
 
-                Log.d("rodo","lastEventId" + lastEventId + "newEventId" + mNewEventId);
                 if (mNewEventId == lastEventId){
                     mLastEventId = lastEventId;
+                    Event event = EventUtility.getEventData(mContext.getContentResolver(),lastEventId);
                     saveFile("event_id.txt", Integer.toString(lastEventId));
-                    saveFile("start.txt", Long.toString(mStartTimeMills));
+                    saveFile("start.txt", Long.toString(event.getStartTimeMills()));
+                    saveFile("title.txt", event.getTitle());
+
+                    Log.d("rodo","lastEventId" + lastEventId);
+                    Log.d("rodo","startTimeMills" + event.getStartTimeMills());
+
+                    //タイマーインスタンス生成
+                    this.mainTimer = new Timer();
+                    //タスククラスインスタンス生成
+                    this.mainTimerTask = new MainTimerTask();
+                    //タイマースケジュール設定＆開始
+                    this.mainTimer.schedule(mainTimerTask, 1000, 1000);
+
                 }
 
             }
@@ -165,7 +218,7 @@ public class MainFragment extends Fragment {
         return sb.toString();
     }
 
-    public String loadFile (String file) {
+    public String loadFile (String file) throws Exception{
         try {
             Log.d("rodo" , "load data file= " + file );
 
@@ -178,10 +231,25 @@ public class MainFragment extends Fragment {
             return ret;
         }
         catch(Exception ex){
-            return "0";
+            throw ex;
         }
     }
 
+    public class MainTimerTask extends TimerTask {
+        @Override
+        public void run() {
+            //ここに定周期で実行したい処理を記述します
+            mHandler.post( new Runnable() {
+                public void run() {
 
+                    //実行間隔分を加算処理
+                    count += 1;
+                    Counter counter = new Counter(count);
+                    //画面にカウントを表示
+                    countText.setText(counter.clockFormat());
+                }
+            });
+        }
+    }
 
 }

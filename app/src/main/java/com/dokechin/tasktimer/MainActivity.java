@@ -1,8 +1,10 @@
-package com.dokechin.myapplication;
+package com.dokechin.tasktimer;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.Button;
+
+import com.dokechin.tasktimer.R;
 
 public class MainActivity extends AppCompatActivity {
 

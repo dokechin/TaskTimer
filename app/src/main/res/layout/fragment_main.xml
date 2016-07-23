@@ -8,14 +8,27 @@
     android:orientation="vertical"
     android:padding="@dimen/menu_padding"
     android:clipChildren="false"
-    tools:context=".MainActivity">
+    tools:context="com.dokechin.tasktimer.MainActivity">
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="@dimen/menu_space"
         android:text="@string/long_app_name"
         android:textAppearance="?android:textAppearanceLarge"
-        android:textSize="@dimen/menu_text_size" />
+        android:textSize="@dimen/menu_text_size"
+        android:layout_gravity="center"/>
+
+    <AutoCompleteTextView
+    android:id="@+id/task_textview"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+        android:hint="@string/task_label"
+    android:ems="10"
+        android:layout_gravity="center"
+    android:text="AutoCompleteTextView">
+
+    <requestFocus />
+    </AutoCompleteTextView>
 
     <Button
         android:id="@+id/enter_button"
@@ -40,6 +53,16 @@
         android:layout_height="wrap_content"
         android:text="@string/about_label"
         android:layout_margin="@dimen/menu_buttom_margin"
+        android:layout_gravity="center"/>
+
+    <TextView
+        android:id="@+id/timer_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/menu_space"
+        android:text="00:00:00"
+        android:textAppearance="?android:textAppearanceLarge"
+        android:textSize="@dimen/timer_text_size"
         android:layout_gravity="center"/>
 
 </LinearLayout>
