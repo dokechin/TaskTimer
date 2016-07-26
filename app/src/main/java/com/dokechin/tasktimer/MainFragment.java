@@ -6,6 +6,7 @@ import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -48,19 +49,64 @@ public class MainFragment extends Fragment {
     private long mCount = 0;		            //カウント
     private Handler mHandler = new Handler();   //UI Threadへのpost用ハンドラ
     private AutoCompleteTextView mTextView;
+    private boolean isRunning = false;
 
+    @Override
+    public void onStop(){
+        super.onStop();
+        Log.d(TAG, "onStop isRunning" + isRunning);
+
+        if (isRunning) {
+            mainTimer.cancel();
+            mainTimer = null;
+        }
+
+        SharedPreferences sp = this.getContext().getSharedPreferences("TaskTimer", Context.MODE_PRIVATE);
+        SharedPreferences.Editor edit = sp.edit();
+        edit.putBoolean("is_running", isRunning);
+        edit.commit();
+
+    }
+
+    @Override public void onStart(){
+        super.onStart();
+
+        Log.d(TAG, "onStart");
+
+        SharedPreferences sp = this.getContext().getSharedPreferences("TaskTimer", Context.MODE_PRIVATE);
+
+        mLastEventId = sp.getInt("event_id", 0);
+        mStartTimeMills = sp.getLong("start", 0);
+        mLastEventTitle = sp.getString("title", "");
+        isRunning = sp.getBoolean("is_running", false);
+
+        Log.d(TAG, "mLastEventId" + mLastEventId);
+        Log.d(TAG, "mStartTimeMills" + mStartTimeMills);
+        Log.d(TAG, "mLastEventTitle" + mLastEventTitle);
+        Log.d(TAG, "isRunning" + isRunning);
+
+
+        if (isRunning && mainTimer == null){
+
+            // restart count
+            mCount = (System.currentTimeMillis() - mStartTimeMills) / 1000;
+            mTextView.setText(mLastEventTitle);
+
+            //タイマーインスタンス生成
+            this.mainTimer = new Timer();
+            //タスククラスインスタンス生成
+            this.mainTimerTask = new MainTimerTask();
+            //タイマースケジュール設定＆開始
+            this.mainTimer.schedule(mainTimerTask, 1000, 1000);
+
+        }
+
+    }
     @Override
     public View onCreateView(LayoutInflater inflater,ViewGroup container,Bundle savedInstanceState){
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
+        Log.d(TAG, "onCreateView");
         mContext = this.getContext();
-        try {
-            mLastEventId = Integer.parseInt(loadFile("event_id.txt"));
-            mStartTimeMills = Long.parseLong(loadFile("start.txt"));
-            mLastEventTitle = loadFile("title.txt");
-        }
-        catch(Exception ex){
-            Log.d(TAG, ex.toString());
-        }
 
         //テキストビュー
         this.countText = (TextView)rootView.findViewById(R.id.timer_text);
@@ -102,8 +148,6 @@ public class MainFragment extends Fragment {
                 //スケジュールのタイトル
                 intent.putExtra(CalendarContract.Events.TITLE, mTextView.getText().toString());
 
-                mStartTimeMills = System.currentTimeMillis();
-
                 //スケジュールの開始時刻 ゼロで現在時刻
                 intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, mStartTimeMills);
 
@@ -125,6 +169,8 @@ public class MainFragment extends Fragment {
             public void onClick(View v) {
                 Event event = EventUtility.getEventData(mContext.getContentResolver(),mLastEventId);
                 mainTimer.cancel();
+                mainTimer = null;
+                isRunning = false;
                 if (mLastEventId > 0 && event != null) {
 
                     Uri uri = ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, mLastEventId);
@@ -147,7 +193,6 @@ public class MainFragment extends Fragment {
                 }
             }
         });
-
 
         return rootView;
     }
@@ -172,12 +217,21 @@ public class MainFragment extends Fragment {
                 int lastEventId = EventUtility.getLastEventId(mContext.getContentResolver());
 
                 if (mNewEventId == lastEventId){
-                    mLastEventId = lastEventId;
-                    Event event = EventUtility.getEventData(mContext.getContentResolver(),lastEventId);
 
-                    saveFile("event_id.txt", Integer.toString(lastEventId));
-                    saveFile("start.txt", Long.toString(event.getStartTimeMills()));
-                    saveFile("title.txt", event.getTitle());
+                    isRunning = true;
+                    mLastEventId = lastEventId;
+                    mStartTimeMills = System.currentTimeMillis();
+
+                    Event event = EventUtility.getEventData(mContext.getContentResolver(),lastEventId);
+                    mTextView.setText(event.getTitle());
+
+                    SharedPreferences sp = this.getContext().getSharedPreferences("TaskTimer", Context.MODE_PRIVATE);
+                    SharedPreferences.Editor edit = sp.edit();
+                    edit.putInt("event_id", lastEventId);
+                    edit.putLong("start", mStartTimeMills);
+                    edit.putString("title", event.getTitle());
+                    edit.putBoolean("is_running", isRunning);
+                    edit.commit();
 
                     // reset count
                     mCount = 0;
@@ -189,55 +243,10 @@ public class MainFragment extends Fragment {
                     //タイマースケジュール設定＆開始
                     this.mainTimer.schedule(mainTimerTask, 1000, 1000);
 
+
                 }
 
             }
-        }
-    }
-
-    // ファイルを保存
-    public void saveFile(String file, String data) {
-
-        Log.d(TAG , String.format("save data file=%s,data=%s" , file , data));
-
-        FileOutputStream fileOutputstream = null;
-
-        try {
-            fileOutputstream = this.getContext().openFileOutput(file, Context.MODE_PRIVATE);
-            fileOutputstream.write(data.getBytes());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-    }
-
-    public static String convertStreamToString(InputStream is) throws Exception{
-        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-        StringBuilder sb = new StringBuilder();
-        String line = null;
-        while ((line = reader.readLine()) != null) {
-            sb.append(line);
-        }
-        reader.close();
-        return sb.toString();
-    }
-
-    public String loadFile (String file) throws Exception{
-        try {
-
-            Log.d(TAG , String.format("load data file %s" , file));
-
-            FileInputStream fileInputstream = this.getContext().openFileInput(file);
-            String ret = convertStreamToString(fileInputstream);
-            //Make sure you close all streams.
-            fileInputstream.close();
-
-            Log.d(TAG , String.format("load data data %s" , ret));
-
-            return ret;
-        }
-        catch(Exception ex){
-            throw ex;
         }
     }
 
